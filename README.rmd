@@ -1,0 +1,74 @@
+---
+title: "Storm Analysis"
+author: "Rob Rolleston"
+date: "July 26, 2015"
+output: html_document
+---
+
+##Synopsis
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage.  By examining data from the National Weather Service this study determines that tornadoes are the  event that is both most harmful with respect to human health and have the greatest economic damage to property, while hail has the greatest economic damage to crops. 
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=3, fig.path='figure/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+##Data Processing
+The raw data is available at [Storom Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).  
+The required libraries are loaded, and the data is read from the compressed file into the `stormData` object.  For performance, if the `stormData` object exists or the `stormData.Rdata` file exists, these are used.
+```{r "librariesAndLoad"}
+#Load required libraries
+library(data.table, quietly = TRUE, verbose=FALSE, warn.conflicts = FALSE)
+library(ggplot2, quietly = TRUE, verbose=FALSE, warn.conflicts = FALSE)
+library(dplyr, quietly = TRUE, verbose=FALSE, warn.conflicts = FALSE)
+
+#Load data 
+if (!exists("stormData")) {
+  #print("stormdata object not found")
+  if (file.exists("stormData.RData")) {
+    #print("stormData.RData file exists")
+    load("stormData.RData")
+  } else {
+    #print ("reading file")
+    stormData <- read.csv("repdata_data_StormData.csv.bz2")
+    save(stormData, file="stormData.RData")
+  }
+} else {
+  #print("stormdata object exists")
+}
+```
+
+The data has `r nrow(stormData)` entries with `r ncol(stormData)` measures.  For this analysis we need only those measures pertaining to the type of event, as encoded with the `EVTYPE` measure where there was was harm to human health or economic consequences.  By examining the data, and the documentation at 
+
+* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+* National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+The relevant measures for each question were determined to be: 
+
+* harmful with respect to population health
+    * FATALITIES, INJURIES
+* greatest economic consequences
+    * PROPDMG (and PROPDMGEXP), CROPDMG, (and CROPDMGEXP)
+
+For ease of processing, the data frame was converted it a `dplyr` df object `stormData_df`, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest.  
+```{r}
+stormData_df <- tbl_df(stormData) %>% 
+  select(one_of(c("EVTYPE", 
+          "FATALITIES", "INJURIES", 
+          "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")))
+stormData_df <- stormData_df %>% 
+                filter(FATALITIES >0 |
+                        INJURIES >0 |
+                        PROPDMG  >0 |
+                        CROPDMG  >0 )
+```
+This reduces the data set to `r nrow(stormData_df)` rows.
+
+The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP  and CROPDMGEXP respectivel. After seelctring only orws of interest, thes values are re-factored. For each of these, there a a very small numbr of entires where this value is undefined or unknown:
+```{r}
+stormData_df$PROPDMGEXP <- factor(stormData_df$PROPDMGEXP)
+stormData_df$CROPDMGEXP <- factor(stormData_df$CROPDMGEXP)
+```
+
+##Results
