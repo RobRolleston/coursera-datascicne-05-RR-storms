@@ -70,11 +70,11 @@ img {
 
 <div id="synopsis" class="section level2">
 <h2>Synopsis</h2>
-<p>Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage. By examining data from the National Weather Service this study determines that tornadoes are the event that is both most harmful with respect to human health and the greatest economic damage to property while hail has the greatest economic damage to crops.</p>
+<p>Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage. By examining data from the National Weather Service this study determines that tornadoes are the event that is both most harmful with respect to human health and have the greatest economic damage to property, while hail has the greatest economic damage to crops.</p>
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<p>The raw data is available at <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">Storom Data</a>.<br />The required libraries are loaded, and the data is read from the compressed file into the <code>stormData</code> object. For performance, if the <code>stormData</code> object exists or the <code>stormData.Rdata</code> file exists, these are used.</p>
+<p>The raw data is available at <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">Storm Data</a>.<br />The required libraries are loaded, and the data is read from the compressed file into the <code>stormData</code> object. For performance, if the <code>stormData</code> object exists or the <code>stormData.Rdata</code> file exists, these are used.</p>
 <pre class="r"><code>#Load required libraries
 library(data.table, quietly = TRUE, verbose=FALSE, warn.conflicts = FALSE)
 library(ggplot2, quietly = TRUE, verbose=FALSE, warn.conflicts = FALSE)
@@ -107,14 +107,26 @@ if (!exists(&quot;stormData&quot;)) {
 </ul></li>
 <li>greatest economic consequences
 <ul>
-<li>PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP</li>
+<li>PROPDMG (and PROPDMGEXP), CROPDMG, (and CROPDMGEXP)</li>
 </ul></li>
 </ul>
-<p>For ease of processing, the data frame was converted it a <code>dplyr</code> df object <code>stormData_df</code>, using only the relevant measures.</p>
-<pre class="r"><code>stormData_df &lt;- tbl_df(stormData) %&gt;% 
-  select(one_of(c(&quot;EVTYPE&quot;, 
-          &quot;FATALITIES&quot;, &quot;INJURIES&quot;, 
-          &quot;PROPDMG&quot;, &quot;PROPDMGEXP&quot;, &quot;CROPDMG&quot;, &quot;CROPDMGEXP&quot;)))</code></pre>
+<p>For ease of processing, the data frame was converted it a <code>dplyr</code> df object <code>stormData_df</code>, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest. At this poitn the data set was also split into two data sets:</p>
+<ul>
+<li><code>stormDataH</code> for the rows with non-zeros Human Impact</li>
+<li><code>stormDataE</code> for the rows with non-zeros Economic Impact</li>
+</ul>
+<pre class="r"><code>stormDataH &lt;- tbl_df(stormData) %&gt;% 
+  select(one_of(c(&quot;EVTYPE&quot;, &quot;FATALITIES&quot;, &quot;INJURIES&quot;))) %&gt;%
+  filter(FATALITIES &gt;0 | INJURIES &gt;0)
+stormDataE &lt;- tbl_df(stormData) %&gt;% 
+  select(one_of(c(&quot;EVTYPE&quot;, &quot;PROPDMG&quot;, &quot;PROPDMGEXP&quot;, &quot;CROPDMG&quot;, &quot;CROPDMGEXP&quot;))) %&gt;%
+  filter(PROPDMG  &gt;0 | CROPDMG  &gt;0 )</code></pre>
+<p>This Human Impact data set has 21929 rows. and the Economic Impact data set has 245031 rows.</p>
+<p>One further piece of processing is required for the Economic Impact data. The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP and CROPDMGEXP respectively. These encodings were re-factored, given the subest of rows selected</p>
+<pre class="r"><code>stormDataE$PROPDMGEXP &lt;- factor(stormDataE$PROPDMGEXP)
+stormDataE$CROPDMGEXP &lt;- factor(stormDataE$CROPDMGEXP)</code></pre>
+<p>The encodings for each are:<br />PROP: , -, +, 0, 2, 3, 4, 5, 6, 7, B, h, H, K, m, M<br />CROP: , ?, 0, B, k, K, m, M</p>
+<p>For each of these, there a a very small number of entries where this value is undefined or unknown:</p>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
