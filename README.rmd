@@ -82,6 +82,83 @@ These entries were dropped from the data set
 stormDataE <- filter(stormDataE, !(PROPDMGEXP %in% (c('-','+','?'))))
 stormDataE <- filter(stormDataE, !(CROPDMGEXP %in% (c('-','+','?'))))
 ```
+The remaining exponenent notation were all converted to numerical values, along with the true alue of the damage.
+```{r}
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == ""] <- 1
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "H"] <- 100
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "h"] <- 100
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "K"] <- 1000
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "M"] <- 1e+06
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "m"] <- 1e+06
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "B"] <- 1e+09
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "0"] <- 1
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "1"] <- 10
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "2"] <- 100
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "3"] <- 1000
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "4"] <- 10000
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "5"] <- 1e+05
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "6"] <- 1e+06
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "7"] <- 1e+07
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "8"] <- 1e+08
+stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "9"] <- 1e+09
+# Finally, compute the property damage value
+stormDataE$PROPDMGVAL <- 0
+stormDataE$PROPDMGVAL <- stormDataE$PROPDMG * stormDataE$PROPEXP
+
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == ""] <- 1
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "B"] <- 1e+09
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "M"] <- 1e+06
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "m"] <- 1e+06
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "K"] <- 1000
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "k"] <- 1000
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "0"] <- 1
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "1"] <- 10
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "2"] <- 100
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "3"] <- 1000
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "4"] <- 10000
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "5"] <- 1e+05
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "6"] <- 1e+06
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "7"] <- 1e+07
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "8"] <- 1e+08
+stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "9"] <- 1e+09
+# Finally, compute the crop damage value
+stormDataE$CROPDMGVAL <- 0
+stormDataE$CROPDMGVAL <- stormDataE$CROPDMG * stormDataE$CROPEXP
+```
+Now that all the values share a common format, the rows can be aggreageted by `EVTYPE`, with sums, sorted, and the top 10 of each selected
+```{r}
+stormDataHumanByType <- stormDataH %>% group_by(EVTYPE) %>% 
+  summarise(totalFatalities=sum(FATALITIES), totalInjuries=sum(INJURIES)) %>%
+  mutate(totalHuman = totalFatalities + totalInjuries) %>%
+  top_n(10, totalHuman) %>%
+  arrange(desc(totalHuman))
+stormDataHumanByType$EVTYPE <- factor(stormDataHumanByType$EVTYPE)
+
+stormDataEconomicByType <- stormDataE %>% group_by(EVTYPE) %>% 
+  summarise(totalCrop=sum(CROPDMGVAL), totalProp=sum(PROPDMGVAL)) %>%
+  mutate(totalEconomic = totalCrop + totalProp) %>%
+  top_n(10, totalEconomic) %>%
+  arrange(desc(totalEconomic))
+stormDataEconomicByType$EVTYPE <- factor(stormDataEconomicByType$EVTYPE)
 
 
+```
 ##Results
+### 1. Aross the United States, Which types of events are nost harmful with respect to population health?
+```{r}
+plotHuman <- ggplot(stormDataHumanByType, aes(x = reorder(EVTYPE, totalHuman), y=totalHuman)) + 
+  geom_bar(stat = "identity") + 
+  ggtitle("Sum of Human Impact due to top 10 destructive event types") + 
+  xlab("Event Types") + ylab("Sum of Injuries & Fatalities (people)")+coord_flip() 
+print(plotHuman)
+```
+
+
+### 2. Across the United States, which types of events have the greatest economic consequences?
+```{r}
+plotEcon <- ggplot(stormDataEconomicByType, aes(x = reorder(EVTYPE, totalEconomic), y=totalEconomic)) + 
+  geom_bar(stat = "identity") + 
+  ggtitle("Sum of Economic Impact due to top 10 destructive event types") + 
+  xlab("Event Types") + ylab("Sum of Crop & Property Damage ($)")+coord_flip() 
+print(plotEcon)
+```
