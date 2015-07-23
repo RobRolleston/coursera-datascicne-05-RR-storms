@@ -70,7 +70,7 @@ img {
 
 <div id="synopsis" class="section level2">
 <h2>Synopsis</h2>
-<p>Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage. By examining data from the National Weather Service this study determines that tornadoes are the event that is both most harmful with respect to human health and have the greatest economic damage to property, while hail has the greatest economic damage to crops.</p>
+<p>Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage. By examining data from the National Weather Service this study determines that tornadoes are the event that is most harmful with respect to human health (e.g. fatalities &amp; injuries) and that floods have the greatest economic damage to property &amp; crops.</p>
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
@@ -110,7 +110,7 @@ if (!exists(&quot;stormData&quot;)) {
 <li>PROPDMG (and PROPDMGEXP), CROPDMG, (and CROPDMGEXP)</li>
 </ul></li>
 </ul>
-<p>For ease of processing, the data frame was converted it a <code>dplyr</code> df object <code>stormData_df</code>, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest. At this poitn the data set was also split into two data sets:</p>
+<p>For ease of processing, the data frame was converted it a <code>dplyr</code> df object <code>stormData_df</code>, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest. At this point the data set was also split into two data sets:</p>
 <ul>
 <li><code>stormDataH</code> for the rows with non-zeros Human Impact</li>
 <li><code>stormDataE</code> for the rows with non-zeros Economic Impact</li>
@@ -122,13 +122,13 @@ stormDataE &lt;- tbl_df(stormData) %&gt;%
   select(one_of(c(&quot;EVTYPE&quot;, &quot;PROPDMG&quot;, &quot;PROPDMGEXP&quot;, &quot;CROPDMG&quot;, &quot;CROPDMGEXP&quot;))) %&gt;%
   filter(PROPDMG  &gt;0 | CROPDMG  &gt;0 )</code></pre>
 <p>This Human Impact data set has 21929 rows. and the Economic Impact data set has 245031 rows.</p>
-<p>One further piece of processing is required for the Economic Impact data. The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP and CROPDMGEXP respectively. These encodings were re-factored, given the subest of rows selected</p>
+<p>One further piece of processing is required for the Economic Impact data. The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP and CROPDMGEXP respectively. These encoding were re-factored, given the subset of rows selected</p>
 <pre class="r"><code>stormDataE$PROPDMGEXP &lt;- factor(stormDataE$PROPDMGEXP)
 stormDataE$CROPDMGEXP &lt;- factor(stormDataE$CROPDMGEXP)</code></pre>
-<p>The encodings for each are:<br />PROP: , -, +, 0, 2, 3, 4, 5, 6, 7, B, h, H, K, m, M<br />CROP: , ?, 0, B, k, K, m, M Where the numercial digits are exponents, and the h|H, k|K, m|M, and B specify hundred, thousand, million,and billion. The other markers: ‘-’, ’+“, and ‘?’ are unknown. Fortunately there are very few of these entries PROP: 6<br />CROP: 6<br />These entries were dropped from the data set</p>
+<p>The encoding for each are:<br />PROP: , -, +, 0, 2, 3, 4, 5, 6, 7, B, h, H, K, m, M<br />CROP: , ?, 0, B, k, K, m, M Where the numerical digits are exponents, and the h|H, k|K, m|M, and B specify hundred, thousand, million,and billion. The other markers: ‘-’, ’+“, and ‘?’ are unknown. Fortunately there are very few of these entries PROP: 6<br />CROP: 6<br />These entries were dropped from the data set</p>
 <pre class="r"><code>stormDataE &lt;- filter(stormDataE, !(PROPDMGEXP %in% (c('-','+','?'))))
 stormDataE &lt;- filter(stormDataE, !(CROPDMGEXP %in% (c('-','+','?'))))</code></pre>
-<p>The remaining exponenent notation were all converted to numerical values, along with the true alue of the damage.</p>
+<p>The remaining exponent notation were all converted to numerical values, along with the true value of the damage.</p>
 <pre class="r"><code>stormDataE$PROPEXP[stormDataE$PROPDMGEXP == &quot;&quot;] &lt;- 1
 stormDataE$PROPEXP[stormDataE$PROPDMGEXP == &quot;H&quot;] &lt;- 100
 stormDataE$PROPEXP[stormDataE$PROPDMGEXP == &quot;h&quot;] &lt;- 100
@@ -169,7 +169,7 @@ stormDataE$CROPEXP[stormDataE$CROPDMGEXP == &quot;9&quot;] &lt;- 1e+09
 # Finally, compute the crop damage value
 stormDataE$CROPDMGVAL &lt;- 0
 stormDataE$CROPDMGVAL &lt;- stormDataE$CROPDMG * stormDataE$CROPEXP</code></pre>
-<p>Now that all the values share a common format, the rows can be aggreageted by <code>EVTYPE</code>, with sums, sorted, and the top 10 of each selected</p>
+<p>Now that all the values share a common format, the rows can be aggregated by <code>EVTYPE</code>, with sums, sorted, and the top 10 of each selected</p>
 <pre class="r"><code>stormDataHumanByType &lt;- stormDataH %&gt;% group_by(EVTYPE) %&gt;% 
   summarise(totalFatalities=sum(FATALITIES), totalInjuries=sum(INJURIES)) %&gt;%
   mutate(totalHuman = totalFatalities + totalInjuries) %&gt;%

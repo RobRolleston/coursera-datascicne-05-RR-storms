@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ##Synopsis
-Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage.  By examining data from the National Weather Service this study determines that tornadoes are the  event that is both most harmful with respect to human health and have the greatest economic damage to property, while hail has the greatest economic damage to crops. 
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage.  By examining data from the National Weather Service this study determines that tornadoes are the event that is most harmful with respect to human health (e.g. fatalities & injuries) and that floods have the greatest economic damage to property & crops. 
 
 
 ```{r global_options, include=FALSE}
@@ -51,7 +51,7 @@ The relevant measures for each question were determined to be:
 * greatest economic consequences
     * PROPDMG (and PROPDMGEXP), CROPDMG, (and CROPDMGEXP)
 
-For ease of processing, the data frame was converted it a `dplyr` df object `stormData_df`, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest. At this poitn the data set was also split into two data sets:
+For ease of processing, the data frame was converted it a `dplyr` df object `stormData_df`, using only the relevant measures, and only the rows with a non-zero value for one of the measures of interest. At this point the data set was also split into two data sets:
 
 * `stormDataH` for the rows with non-zeros Human Impact
 * `stormDataE` for the rows with non-zeros Economic Impact
@@ -66,15 +66,15 @@ stormDataE <- tbl_df(stormData) %>%
 ```
 This Human Impact data set has `r nrow(stormDataH)` rows. and the Economic Impact data set has `r nrow(stormDataE)` rows.
 
-One further piece of processing is required for the Economic Impact data.  The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP  and CROPDMGEXP respectively. These encodings were re-factored, given the subest of rows selected
+One further piece of processing is required for the Economic Impact data.  The PROPDMG and CROPDMG each have the scale of the value encoded in PROPDMGEXP  and CROPDMGEXP respectively. These encoding were re-factored, given the subset of rows selected
 ```{r}
 stormDataE$PROPDMGEXP <- factor(stormDataE$PROPDMGEXP)
 stormDataE$CROPDMGEXP <- factor(stormDataE$CROPDMGEXP)
 ```
-The encodings for each are:  
+The encoding for each are:  
 PROP: `r levels(stormDataE$PROPDMGEXP)`  
 CROP: `r levels(stormDataE$CROPDMGEXP)`
-Where the numercial digits are exponents, and the h|H, k|K, m|M, and B specify hundred, thousand, million,and billion.  The other markers: '-', '+", and '?' are unknown.  Fortunately there are very few of these entries
+Where the numerical digits are exponents, and the h|H, k|K, m|M, and B specify hundred, thousand, million,and billion.  The other markers: '-', '+", and '?' are unknown.  Fortunately there are very few of these entries
 PROP: `r nrow(filter(stormDataE, PROPDMGEXP %in% (c('-','+','?'))))`  
 CROP: `r nrow(filter(stormDataE, CROPDMGEXP %in% (c('-','+','?'))))`  
 These entries were dropped from the data set
@@ -82,7 +82,7 @@ These entries were dropped from the data set
 stormDataE <- filter(stormDataE, !(PROPDMGEXP %in% (c('-','+','?'))))
 stormDataE <- filter(stormDataE, !(CROPDMGEXP %in% (c('-','+','?'))))
 ```
-The remaining exponenent notation were all converted to numerical values, along with the true alue of the damage.
+The remaining exponent notation were all converted to numerical values, along with the true value of the damage.
 ```{r}
 stormDataE$PROPEXP[stormDataE$PROPDMGEXP == ""] <- 1
 stormDataE$PROPEXP[stormDataE$PROPDMGEXP == "H"] <- 100
@@ -125,7 +125,7 @@ stormDataE$CROPEXP[stormDataE$CROPDMGEXP == "9"] <- 1e+09
 stormDataE$CROPDMGVAL <- 0
 stormDataE$CROPDMGVAL <- stormDataE$CROPDMG * stormDataE$CROPEXP
 ```
-Now that all the values share a common format, the rows can be aggreageted by `EVTYPE`, with sums, sorted, and the top 10 of each selected
+Now that all the values share a common format, the rows can be aggregated by `EVTYPE`, with sums, sorted, and the top 10 of each selected
 ```{r}
 stormDataHumanByType <- stormDataH %>% group_by(EVTYPE) %>% 
   summarise(totalFatalities=sum(FATALITIES), totalInjuries=sum(INJURIES)) %>%

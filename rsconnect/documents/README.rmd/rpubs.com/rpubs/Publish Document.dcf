@@ -3,6 +3,5 @@ account: rpubs
 server: rpubs.com
 bundleId:
         https://api.rpubs.com/api/v1/document/94309/457c670d1ef447d2803da4c230c2ab65
-url:
-        http://rpubs.com/publish/claim/94309/a8e2808f5afa4ecc9e5316b7fcb97abe
-when: 1437663211.24775
+url: http://rpubs.com/RobRolleston/94309
+when: 1437670341.97175
